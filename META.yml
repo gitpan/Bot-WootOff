@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Bot-WootOff
-version:            0.01
+version:            0.02
 abstract:           Poll woot.com during a woot-off and notify via IRC
 author:
     - Mike Schilli <cpan@perlmeister.com>
@@ -16,6 +16,8 @@ requires:
     Log::Log4perl:        1
     POE:                  1
     POE::Component::Client::HTTP:  0
+resources:
+    repository:  http://github.com/mschilli/bot-wootoff
 no_index:
     directory:
         - t
