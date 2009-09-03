@@ -1,28 +1,15 @@
---- #YAML:1.0
-name:               Bot-WootOff
-version:            0.03
-abstract:           Poll woot.com during a woot-off and notify via IRC
-author:
-    - Mike Schilli <cpan@perlmeister.com>
-license:            unknown
-distribution_type:  module
-configure_requires:
-    ExtUtils::MakeMaker:  0
-build_requires:
-    ExtUtils::MakeMaker:  0
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         Bot-WootOff
+version:      0.04
+version_from: WootOff.pm
+installdirs:  site
 requires:
-    Bot::BasicBot:        0.81
-    HTTP::Request::Common:  0
-    Log::Log4perl:        1
-    POE:                  1
+    Bot::BasicBot:                 0.81
+    HTTP::Request::Common:         0
+    Log::Log4perl:                 1
+    POE:                           0.99
     POE::Component::Client::HTTP:  0
-resources:
-    repository:  http://github.com/mschilli/bot-wootoff
-no_index:
-    directory:
-        - t
-        - inc
-generated_by:       ExtUtils::MakeMaker version 6.50
-meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.30_01

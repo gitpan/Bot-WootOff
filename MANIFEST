@@ -5,6 +5,9 @@ MANIFEST			This list of files
 MANIFEST.SKIP
 README
 t/001Basic.t
+t/002Scrape.t
+t/canned/woot-20090903.html
+t/canned/woot-legacy.html
 Woot.pm
 WootOff.pm
 META.yml                                 Module meta-data (added by MakeMaker)
