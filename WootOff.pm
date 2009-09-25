@@ -9,7 +9,7 @@ use HTTP::Request::Common qw(GET);
 use POE qw(Component::Client::HTTP);
 use Log::Log4perl qw(:easy);
 
-our $VERSION = "0.05";
+our $VERSION = "0.06";
 
 ###########################################
 sub new {
@@ -20,22 +20,40 @@ sub new {
     irc_server    => "irc.freenode.net",
     irc_channel   => "#wootoff" . sprintf("%04d", int(rand(1000))),
     irc_nick      => "wootbot",
-    http_agent    => (__PACKAGE__ . "/" . $VERSION),
     http_alias    => "wootoff-ua",
     http_timeout  => 60,
-    http_url      => "http://www.woot.com",
     poll_interval => 30,
     Alias         => "wootoff-bot",
     spawn         => 1,
+    last_msg      => undef,
     %options,
   };
 
   bless $self, $class;
 
+  $self->{http_agent} = $self->agent() unless defined $self->{http_agent};
+  $self->{http_url}   = $self->woot_url() unless defined $self->{http_url};
+
   # Start it up automatically.
   $self->spawn() if $self->{spawn};
 
   return $self;
+}
+
+###########################################
+sub woot_url {
+###########################################
+    my($self) = @_;
+
+    return "http://www.woot.com";
+}
+
+###########################################
+sub agent {
+###########################################
+    my($self) = @_;
+
+    return(__PACKAGE__ . "/" . $VERSION),
 }
 
 ###########################################
@@ -76,7 +94,7 @@ sub spawn {
       http_ready => sub {
         my $resp= $_[ARG1]->[0];
         if($resp->is_success()) {
-          my $text = $resp->content();;
+          my $text = $resp->content();
 
           my($item, $price) = $self->html_scrape($text);
 
@@ -87,20 +105,70 @@ sub spawn {
 
           if($last_item ne $item) {
               $last_item = $item;
+              my $body = "$item $price $self->{http_url}";
               $self->{bot}->say(channel => $self->{irc_channel}, 
-                      body => "$item $price $self->{http_url}");
+                                body    => $body);
+              $self->{bot}->{last_msg} = $body;
               INFO "$item \$$price posted to $self->{irc_channel}";
           } else {
               DEBUG "Nothing changed";
           }
 
         } else {
-          print $resp->message();
+          if(defined $resp->code()) {
+              ERROR "HTTP fetch failed with code: ", $resp->code(),
+               (defined $resp->message() ? $resp->message() : "");
+          }
         }
         $poe_kernel->delay("http_start", $self->{poll_interval} );
       },
     }
   );
+}
+
+###########################################
+sub scraper_test {
+###########################################
+    my($self) = @_;
+
+    require LWP::UserAgent;
+    my $ua = LWP::UserAgent->new();
+    $ua->agent( $self->agent() );
+    $self->error("");
+
+    my $response = $ua->get( $self->woot_url() );
+
+    if( $response->is_success() ) {
+        my $bot = Bot::WootOff->new(spawn => 0);
+
+        my($item, $price) = $bot->html_scrape( $response->content() );
+        if(!defined $price) {
+            $self->error("Scraper failed -- please notify the author");
+            return undef;
+        } else {
+            INFO "Scraper successfully got item and price";
+            INFO "Item: [$item] Price: [$price]";
+            return($item, $price);
+        }
+    }
+
+    $self->error("Fetching woot.com page failed: ", $response->message());
+    return undef;
+}
+
+###########################################
+sub error {
+###########################################
+    my($self, @text) = @_;
+
+    if(scalar @text) {
+        $self->{error} = join ' ', @text;
+        if(length $self->{error}) {
+            ERROR $self->{error};
+        }
+    }
+
+    return $self->{error};
 }
 
 ###########################################
@@ -156,7 +224,19 @@ use Bot::BasicBot;
 use base qw( Bot::BasicBot );
 use Log::Log4perl qw(:easy);
 
-#$^W = undef;
+###########################################
+sub said {
+###########################################
+    my($self, $msg) = @_;
+
+      # If someone says "!woot", repeat the last message
+    if($msg->{body} =~ /^!woot/) {
+        return $self->{last_msg} if defined $self->{last_msg};
+    }
+
+      # remain mum otherwise
+    return "";
+}
 
 1;
 
@@ -228,6 +308,10 @@ messages will look like
 Each message contains a link to woot.com, which will be displayed by IRC
 clients like Pidgin in a clickable format, so that you can reach the 
 current offer with a single mouse click.
+
+If someone in the channel says "!woot" then the bot will repeat its last
+message. This is helpful if someone just joined the channel and wants
+to know what the current item is.
 
 All you have to do to receive these message is use an IRC client like 
 Pidgin, connect to the IRC server specified (irc.freenode.net by default),
