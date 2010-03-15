@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Bot-WootOff
-version:            0.06
+version:            0.07
 abstract:           Poll woot.com during a woot-off and notify via IRC
 author:
     - Mike Schilli <cpan@perlmeister.com>
